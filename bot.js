@@ -51,7 +51,12 @@ async function logUserAccess(ctx) {
     const username = ctx.from.username || 'N/A';
     const timestamp = new Date(ctx.message.date * 1000).toISOString();
     const message = `User ID: ${userId}, Username: ${username}, Timestamp: ${timestamp}`;
-    await bot.telegram.sendMessage(ownerId, message);
+    
+    try {
+        await bot.telegram.sendMessage(ownerId, message);
+    } catch (error) {
+        console.error('Error logging user access:', error.message);
+    }
 }
 
 bot.start(async (ctx) => {
