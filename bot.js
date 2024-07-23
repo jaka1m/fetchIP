@@ -10,7 +10,7 @@ function isValidIpAddress(ip) {
 }
 
 async function fetchIpInformation(ip) {
-    const apiUrl = `https://api.allorigins.win/raw?url=https://info-ip.mahal.filegear-sg.me/?ip=${ip}`;
+    const apiUrl = `https://info-ip.mahal.filegear-sg.me/?ip=${ip}`;
 
     try {
         const response = await axios.get(apiUrl);
