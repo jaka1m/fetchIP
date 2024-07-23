@@ -2,32 +2,18 @@ require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const axios = require('axios');
 
-const token = process.env.TELEGRAM_BOT_TOKEN;
+const token = process.env.geo;
 const bot = new Telegraf(token);
 
 function isValidIpAddress(ip) {
     return /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip);
 }
 
-async function fetchProxyStatus(ip) {
-    const apiUrl = `https://proxyip.edtunnel.best/api?ip=${ip}&host=speed.cloudflare.com&port=443&tls=true`;
-
-    try {
-        const response = await axios.get(apiUrl);
-        console.log('Proxy Status Response:', response.data); // Debugging log
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching proxy status:', error.message);
-        return { error: 'Failed to fetch proxy status' };
-    }
-}
-
 async function fetchIpInformation(ip) {
-    const apiUrl = `http://ip-api.com/json/${ip}`;
+    const apiUrl = `https://info-ip.mahal.filegear-sg.me/?ip=${ip}`;
 
     try {
         const response = await axios.get(apiUrl);
-        console.log('IP Information Response:', response.data); // Debugging log
         return response.data;
     } catch (error) {
         console.error('Error fetching IP data:', error.message);
@@ -35,23 +21,18 @@ async function fetchIpInformation(ip) {
     }
 }
 
-function formatIpInfo(ipInfo, ip, proxyStatus) {
+function formatIpInfo(ipInfo, ip) {
     if (!ipInfo) {
         return `<b>Informasi IP tidak tersedia untuk IP: ${ip}</b>`;
     }
 
-    const proxyStatusText = proxyStatus === undefined 
-        ? 'N/A' 
-        : (proxyStatus.proxyip ? 'ACTIVE ✅' : 'DEAD ❌');
-
-    // Sesuaikan dengan struktur data dari API ip-api dan proxy status
     const labels = {
-        IP: ipInfo.query || ip || 'N/A',
-        OriginIP: ipInfo.query || 'N/A',
+        IP: ipInfo.ip || 'N/A',
+        OriginIP: ipInfo.originIp || 'N/A',
         ISP: ipInfo.isp || 'N/A',
-        Country: `${ipInfo.country} (${ipInfo.countryCode})` || 'N/A',
+        Country: ipInfo.country || 'N/A',
         City: ipInfo.city || 'N/A',
-        'Proxy Status': proxyStatusText
+        'Proxy Status': ipInfo.proxyStatus || 'N/A'
     };
 
     const maxLength = Math.max(...Object.keys(labels).map(label => label.length));
@@ -89,27 +70,16 @@ bot.on('text', async (ctx) => {
     for (const batch of batches) {
         const loadingMessage = await ctx.reply('⏳');
 
-        // Fetch proxy status first
-        const proxyStatusPromises = batch.map(fetchProxyStatus);
-        const proxyStatuses = await Promise.all(proxyStatusPromises);
-
-        // Fetch IP information second
         const ipInfoPromises = batch.map(fetchIpInformation);
         const ipInfos = await Promise.all(ipInfoPromises);
 
         let response = '';
-        for (let i = 0; i < batch.length; i++) {
-            const ip = batch[i];
+        for (let i = 0; i < ipInfos.length; i++) {
             const ipInfo = ipInfos[i];
-            const proxyStatus = proxyStatuses[i];
-
-            const status = proxyStatus.error ? 'Error fetching proxy status' : (proxyStatus.proxyip ? 'ACTIVE ✅' : 'DEAD ❌');
-
             if (ipInfo.error) {
                 response += `<pre>Error: ${ipInfo.error}</pre>\n`;
             } else {
-                const info = formatIpInfo(ipInfo, ip, proxyStatus);
-                response += `<pre>${info}</pre>\n`;
+                response += `<pre>${formatIpInfo(ipInfo, batch[i])}</pre>\n`;
             }
         }
 
