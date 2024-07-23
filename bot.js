@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const axios = require('axios');
 
-const token = process.env.geo;
+const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new Telegraf(token);
 
 function isValidIpAddress(ip) {
